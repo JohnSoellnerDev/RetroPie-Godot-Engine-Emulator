@@ -4,6 +4,12 @@
 
 - Up to date
 
+## [1.12.4] - 2024-12-19
+
+### Added
+
+- Support for Godot 4.4.1 binaries.
+
 ## [1.12.3] - 2023-05-09
 
 ### Fixed

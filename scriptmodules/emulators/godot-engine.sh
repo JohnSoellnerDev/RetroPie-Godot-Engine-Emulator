@@ -637,18 +637,37 @@ function _install_update_scraper() {
 }
 
 
+# Helper functions ##############################
+
+function _detect_arm_architecture() {
+    local arch="$(uname -m)"
+    case "$arch" in
+        armv6l|armv7l)
+            echo "arm32"
+            ;;
+        aarch64|arm64)
+            echo "arm64"
+            ;;
+        *)
+            echo "unknown"
+            ;;
+    esac
+}
+
+
 # Scriptmodule functions ############################
 
 function sources_godot-engine() {
     local url="https://github.com/hiulit/RetroPie-Godot-Game-Engine-Emulator/releases/download/v${VERSION_MAJOR}.${VERSION_MINOR}.0"
+    local arm_arch="$(_detect_arm_architecture)"
 
     for version in "${GODOT_VERSIONS[@]}"; do
         if isPlatform "x86"; then
             downloadAndExtract "${url}/godot_${version}_x11_32.zip" "$md_build"
         elif isPlatform "x86_64"; then
             downloadAndExtract "${url}/godot_${version}_x11_64.zip" "$md_build"
-        elif isPlatform "aarch64"; then
-            # For generic ARM64 systems, use official Godot ARM64 builds for Godot 4.x versions
+        elif isPlatform "aarch64" || [[ "$arm_arch" == "arm64" ]]; then
+            # For ARM64 systems (detected via uname -m or platform), use official Godot ARM64 builds for Godot 4.x versions
             if [[ "$version" == "4."* ]]; then
                 # Use official Godot build from GitHub releases
                 local official_url="https://github.com/godotengine/godot-builds/releases/download/${version}-stable"
@@ -657,27 +676,37 @@ function sources_godot-engine() {
                 # For older versions, use FRT ARM64 build
                 downloadAndExtract "${url}/frt_${version}_arm64.zip" "$md_build"
             fi
-        elif isPlatform "rpi1"; then
-            downloadAndExtract "${url}/frt_${version}_pi1.zip" "$md_build"
-        elif isPlatform "rpi2" || isPlatform "rpi3" || isPlatform "rpi4" || isPlatform "rpi400"; then
-            # For Pi 2/3/4/400, use official Godot ARM64 builds for Godot 4.x versions (Pi 4/400 are ARM64)
-            if [[ "$version" == "4."* ]] && (isPlatform "rpi4" || isPlatform "rpi400"); then
-                # Pi 4 and Pi 400 are ARM64 - use official Godot build from GitHub releases
+        elif isPlatform "rpi1" || [[ "$arm_arch" == "arm32" ]]; then
+            # For ARM32 systems (detected via uname -m) or explicitly Pi 1
+            if [[ "$version" == "4."* ]]; then
+                # Use official Godot ARM32 build from GitHub releases for Godot 4.x
                 local official_url="https://github.com/godotengine/godot-builds/releases/download/${version}-stable"
-                downloadAndExtract "${official_url}/Godot_v${version}-stable_linux.arm64.zip" "$md_build"
+                downloadAndExtract "${official_url}/Godot_v${version}-stable_linux.arm32.zip" "$md_build"
+            elif isPlatform "rpi1"; then
+                downloadAndExtract "${url}/frt_${version}_pi1.zip" "$md_build"
             else
-                # For Pi 2/3 or older Godot versions, use FRT builds
+                # For other ARM32 systems with older Godot versions, use Pi2 FRT build which works on most ARM32
                 downloadAndExtract "${url}/frt_${version}_pi2.zip" "$md_build"
             fi
-        elif isPlatform "rpi5"; then
-            # For Raspberry Pi 5, use official Godot ARM64 builds for Godot 4.x versions
-            if [[ "$version" == "4."* ]]; then
-                # Use official Godot build from GitHub releases
+        elif isPlatform "rpi2" || isPlatform "rpi3" || isPlatform "rpi4" || isPlatform "rpi400" || isPlatform "rpi5"; then
+            # For specific Pi models, check architecture to determine binary
+            if [[ "$arm_arch" == "arm64" ]] && [[ "$version" == "4."* ]]; then
+                # ARM64 Pi with Godot 4.x - use official ARM64 build
                 local official_url="https://github.com/godotengine/godot-builds/releases/download/${version}-stable"
                 downloadAndExtract "${official_url}/Godot_v${version}-stable_linux.arm64.zip" "$md_build"
-            else
-                # For older versions, try FRT ARM64 build as fallback
+            elif [[ "$arm_arch" == "arm32" ]] && [[ "$version" == "4."* ]]; then
+                # ARM32 Pi with Godot 4.x - use official ARM32 build
+                local official_url="https://github.com/godotengine/godot-builds/releases/download/${version}-stable"
+                downloadAndExtract "${official_url}/Godot_v${version}-stable_linux.arm32.zip" "$md_build"
+            elif [[ "$arm_arch" == "arm64" ]]; then
+                # ARM64 Pi with older Godot versions - use FRT ARM64 build
                 downloadAndExtract "${url}/frt_${version}_arm64.zip" "$md_build"
+            elif isPlatform "rpi1"; then
+                # Pi 1 is always ARM32 with older versions - use FRT Pi1 build
+                downloadAndExtract "${url}/frt_${version}_pi1.zip" "$md_build"
+            else
+                # ARM32 Pi (2/3) with older versions or fallback
+                downloadAndExtract "${url}/frt_${version}_pi2.zip" "$md_build"
             fi
         fi
     done

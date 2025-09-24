@@ -678,10 +678,14 @@ function sources_godot-engine() {
             fi
         elif isPlatform "rpi1" || [[ "$arm_arch" == "arm32" ]]; then
             # For ARM32 systems (detected via uname -m) or explicitly Pi 1
-            if isPlatform "rpi1"; then
+            if [[ "$version" == "4."* ]]; then
+                # Use official Godot ARM32 build from GitHub releases for Godot 4.x
+                local official_url="https://github.com/godotengine/godot-builds/releases/download/${version}-stable"
+                downloadAndExtract "${official_url}/Godot_v${version}-stable_linux.arm32.zip" "$md_build"
+            elif isPlatform "rpi1"; then
                 downloadAndExtract "${url}/frt_${version}_pi1.zip" "$md_build"
             else
-                # For other ARM32 systems, use Pi2 FRT build which works on most ARM32
+                # For other ARM32 systems with older Godot versions, use Pi2 FRT build which works on most ARM32
                 downloadAndExtract "${url}/frt_${version}_pi2.zip" "$md_build"
             fi
         elif isPlatform "rpi2" || isPlatform "rpi3" || isPlatform "rpi4" || isPlatform "rpi400" || isPlatform "rpi5"; then
@@ -690,14 +694,18 @@ function sources_godot-engine() {
                 # ARM64 Pi with Godot 4.x - use official ARM64 build
                 local official_url="https://github.com/godotengine/godot-builds/releases/download/${version}-stable"
                 downloadAndExtract "${official_url}/Godot_v${version}-stable_linux.arm64.zip" "$md_build"
+            elif [[ "$arm_arch" == "arm32" ]] && [[ "$version" == "4."* ]]; then
+                # ARM32 Pi with Godot 4.x - use official ARM32 build
+                local official_url="https://github.com/godotengine/godot-builds/releases/download/${version}-stable"
+                downloadAndExtract "${official_url}/Godot_v${version}-stable_linux.arm32.zip" "$md_build"
             elif [[ "$arm_arch" == "arm64" ]]; then
                 # ARM64 Pi with older Godot versions - use FRT ARM64 build
                 downloadAndExtract "${url}/frt_${version}_arm64.zip" "$md_build"
             elif isPlatform "rpi1"; then
-                # Pi 1 is always ARM32
+                # Pi 1 is always ARM32 with older versions - use FRT Pi1 build
                 downloadAndExtract "${url}/frt_${version}_pi1.zip" "$md_build"
             else
-                # ARM32 Pi (2/3) or fallback
+                # ARM32 Pi (2/3) with older versions or fallback
                 downloadAndExtract "${url}/frt_${version}_pi2.zip" "$md_build"
             fi
         fi

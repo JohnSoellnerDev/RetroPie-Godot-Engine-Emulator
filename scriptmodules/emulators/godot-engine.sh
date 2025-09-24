@@ -23,7 +23,7 @@ rp_module_help+="\n- Godot logo: CC BY 3.0."
 rp_module_help+="\n- Godot pixel logo: CC BY-NC-SA 4.0."
 rp_module_licence="MIT https://raw.githubusercontent.com/hiulit/RetroPie-Godot-Game-Engine-Emulator/master/LICENSE"
 rp_module_section="opt"
-rp_module_flags="x86 x86_64 aarch64 rpi1 rpi2 rpi3 rpi4"
+rp_module_flags="x86 x86_64 aarch64 rpi1 rpi2 rpi3 rpi4 rpi400 rpi5"
 
 
 # Global variables ##################################
@@ -648,11 +648,37 @@ function sources_godot-engine() {
         elif isPlatform "x86_64"; then
             downloadAndExtract "${url}/godot_${version}_x11_64.zip" "$md_build"
         elif isPlatform "aarch64"; then
-            downloadAndExtract "${url}/frt_${version}_arm64.zip" "$md_build"
+            # For generic ARM64 systems, use official Godot ARM64 builds for Godot 4.x versions
+            if [[ "$version" == "4."* ]]; then
+                # Use official Godot build from GitHub releases
+                local official_url="https://github.com/godotengine/godot-builds/releases/download/${version}-stable"
+                downloadAndExtract "${official_url}/Godot_v${version}-stable_linux.arm64.zip" "$md_build"
+            else
+                # For older versions, use FRT ARM64 build
+                downloadAndExtract "${url}/frt_${version}_arm64.zip" "$md_build"
+            fi
         elif isPlatform "rpi1"; then
             downloadAndExtract "${url}/frt_${version}_pi1.zip" "$md_build"
-        elif isPlatform "rpi2" || isPlatform "rpi3" || isPlatform "rpi4"; then
-            downloadAndExtract "${url}/frt_${version}_pi2.zip" "$md_build"
+        elif isPlatform "rpi2" || isPlatform "rpi3" || isPlatform "rpi4" || isPlatform "rpi400"; then
+            # For Pi 2/3/4/400, use official Godot ARM64 builds for Godot 4.x versions (Pi 4/400 are ARM64)
+            if [[ "$version" == "4."* ]] && (isPlatform "rpi4" || isPlatform "rpi400"); then
+                # Pi 4 and Pi 400 are ARM64 - use official Godot build from GitHub releases
+                local official_url="https://github.com/godotengine/godot-builds/releases/download/${version}-stable"
+                downloadAndExtract "${official_url}/Godot_v${version}-stable_linux.arm64.zip" "$md_build"
+            else
+                # For Pi 2/3 or older Godot versions, use FRT builds
+                downloadAndExtract "${url}/frt_${version}_pi2.zip" "$md_build"
+            fi
+        elif isPlatform "rpi5"; then
+            # For Raspberry Pi 5, use official Godot ARM64 builds for Godot 4.x versions
+            if [[ "$version" == "4."* ]]; then
+                # Use official Godot build from GitHub releases
+                local official_url="https://github.com/godotengine/godot-builds/releases/download/${version}-stable"
+                downloadAndExtract "${official_url}/Godot_v${version}-stable_linux.arm64.zip" "$md_build"
+            else
+                # For older versions, try FRT ARM64 build as fallback
+                downloadAndExtract "${url}/frt_${version}_arm64.zip" "$md_build"
+            fi
         fi
     done
 }
@@ -734,7 +760,7 @@ function configure_godot-engine() {
 
         # Remove the extra files and create the final array with the needed files.
         for bin_file_tmp in "${bin_files_tmp[@]}"; do
-            if [[ "$bin_file_tmp" == *"frt_"* || "$bin_file_tmp" == *"godot_"* ]]; then
+            if [[ "$bin_file_tmp" == *"frt_"* || "$bin_file_tmp" == *"godot_"* || "$bin_file_tmp" == *"Godot_"* ]]; then
                 bin_files+=("$bin_file_tmp")
             fi
         done
@@ -754,8 +780,14 @@ function configure_godot-engine() {
         
         # Get the version from the file name.
         version="${bin_files[$index]}"
-        # Cut between "_".
-        version="$(echo $version | cut -d'_' -f 2)"
+        # Handle different filename patterns for version extraction
+        if [[ "$version" == *"Godot_v"* ]]; then
+            # Official Godot binary format: Godot_v4.4.1-stable_linux.arm64
+            version="$(echo $version | sed 's/Godot_v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/')"
+        else
+            # FRT/custom binary format: frt_4.4.1_suffix or godot_4.4.1_suffix
+            version="$(echo $version | cut -d'_' -f 2)"
+        fi
 
         if [[ "$version" == "2.1.6" ]]; then
             audio_driver_string="-ad"
@@ -770,12 +802,19 @@ function configure_godot-engine() {
         if isPlatform "x86" || isPlatform "x86_64"; then
             addEmulator "$default" "$md_id-$version" "$RP_MODULE_ID" "$md_inst/${bin_files[$index]} $main_pack_string %ROM% $audio_driver_string $AUDIO_DRIVER $video_driver_string $VIDEO_DRIVER -f"
         else
-            local frt_keyboard_id_string=""
-            [[ -n "$FRT_KEYBOARD_ID" ]] && frt_keyboard_id_string="FRT_KEYBOARD_ID='$FRT_KEYBOARD_ID'"
-            local frt_kms_drm_device_string=""
-            [[ -n "$FRT_KMSDRM_DEVICE" ]] && frt_kms_drm_device_string="FRT_KMSDRM_DEVICE='$FRT_KMSDRM_DEVICE'"
+            # Check if this is an official Godot binary (not FRT)
+            if [[ "${bin_files[$index]}" == *"Godot_v"* ]]; then
+                # Official Godot binary - use standard command line without FRT-specific variables
+                addEmulator "$default" "$md_id-$version" "$RP_MODULE_ID" "$md_inst/${bin_files[$index]} $main_pack_string %ROM% $audio_driver_string $AUDIO_DRIVER $video_driver_string $VIDEO_DRIVER -f"
+            else
+                # FRT binary - use FRT-specific environment variables
+                local frt_keyboard_id_string=""
+                [[ -n "$FRT_KEYBOARD_ID" ]] && frt_keyboard_id_string="FRT_KEYBOARD_ID='$FRT_KEYBOARD_ID'"
+                local frt_kms_drm_device_string=""
+                [[ -n "$FRT_KMSDRM_DEVICE" ]] && frt_kms_drm_device_string="FRT_KMSDRM_DEVICE='$FRT_KMSDRM_DEVICE'"
 
-            addEmulator "$default" "$md_id-$version" "$RP_MODULE_ID" "FRT_EXIT_SHORTCUT=shift-enter $md_inst/${bin_files[$index]} $main_pack_string %ROM% $audio_driver_string $AUDIO_DRIVER $video_driver_string $VIDEO_DRIVER -f"
+                addEmulator "$default" "$md_id-$version" "$RP_MODULE_ID" "FRT_EXIT_SHORTCUT=shift-enter $md_inst/${bin_files[$index]} $main_pack_string %ROM% $audio_driver_string $AUDIO_DRIVER $video_driver_string $VIDEO_DRIVER -f"
+            fi
         fi
     done
 

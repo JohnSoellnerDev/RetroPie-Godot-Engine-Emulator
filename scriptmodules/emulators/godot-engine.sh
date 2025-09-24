@@ -654,8 +654,8 @@ function sources_godot-engine() {
         elif isPlatform "rpi2" || isPlatform "rpi3" || isPlatform "rpi4"; then
             downloadAndExtract "${url}/frt_${version}_pi2.zip" "$md_build"
         elif isPlatform "rpi5"; then
-            # For Raspberry Pi 5, use official Godot ARM64 builds for newer versions
-            if [[ "$version" == "4.4.1" ]]; then
+            # For Raspberry Pi 5, use official Godot ARM64 builds for Godot 4.x versions
+            if [[ "$version" == "4."* ]]; then
                 # Use official Godot build from GitHub releases
                 local official_url="https://github.com/godotengine/godot-builds/releases/download/${version}-stable"
                 downloadAndExtract "${official_url}/Godot_v${version}-stable_linux.arm64.zip" "$md_build"

@@ -14,6 +14,7 @@ If you are running RetroPie on an `x86/x86_64` Linux PC you can also play Godot 
 
 - [Where to find games made with Godot](#-where-to-find-games-made-with-godot)
 - [Compatibility list](#%EF%B8%8F-compatibility-list)
+- [Platform support](#%EF%B8%8F-platform-support)
 - [Setup script](#%EF%B8%8F-setup-script)
 - [Install the Godot "emulator" from RetroPie-Setup](#install-the-godot-emulator-from-retropie-setup)
 - [Uninstall the Godot "emulator" from RetroPie-Setup](#uninstall-the-godot-emulator-from-retropie-setup)
@@ -40,6 +41,18 @@ Most games are free to dowload, some are "pay what you want" with a suggested pr
 Take a look at the [compatibility list](https://docs.google.com/spreadsheets/d/1ybU_NHqhnJmZnlP9YDDGEf4BJ5nInbfsVVQtQCM7rYw/edit?usp=sharing) to check which games work.
 
 Everyone can contribute to the list by starting a [discussion](https://github.com/hiulit/RetroPie-Godot-Game-Engine-Emulator/discussions).
+
+## 🖥️ Platform support
+
+This scriptmodule supports the following platforms:
+
+- **x86/x86_64**: Uses official Godot Linux binaries
+- **Raspberry Pi 1**: Uses FRT (custom Godot build for single-board computers)
+- **Raspberry Pi 2/3/4**: Uses FRT (custom Godot build for single-board computers)
+- **Raspberry Pi 5**: Uses official Godot ARM64 binaries for Godot 4.x versions, FRT for older versions
+- **Other ARM64 systems**: Uses FRT ARM64 builds
+
+> **Note for Raspberry Pi 5 users**: Godot 4.x games will use the official ARM64 Godot binaries instead of FRT, providing better compatibility and performance.
 
 ## 🛠️ Setup script
 
@@ -112,8 +125,10 @@ The script installs all the major versions of Godot for maximum compatibility:
 
 - `2.1.6`
 - `3.0.6`
+- `3.2.3`
 - `3.4.5`
-- `3.5.1`
+- `3.5.2`
+- `4.4.1`
 
 A new `godot-engine` folder will be created in `~/RetroPie/roms`, where you can [install the Godot games](#how-to-install-godot-games) using the `.pck` and `.zip` extensions.
 

@@ -54,6 +54,8 @@ This scriptmodule supports the following platforms:
 - **Raspberry Pi 5**: Uses official Godot ARM64 binaries for Godot 4.x versions, FRT for older versions
 - **Other ARM64 systems**: Uses official Godot ARM64 binaries for Godot 4.x versions, FRT for older versions
 
+> **Architecture Detection**: The script now uses `uname -m` to automatically detect ARM32 (armv6l, armv7l) vs ARM64 (aarch64, arm64) architectures and selects the appropriate Godot binaries accordingly. This ensures optimal compatibility regardless of the specific hardware platform.
+
 > **Note for ARM64 users (Pi 4, Pi 400, Pi 5, other ARM64 systems)**: Godot 4.x games will use the official ARM64 Godot binaries instead of FRT, providing better compatibility and performance. This is necessary because FRT builds are not available for Godot 4.x versions.
 
 ## 🛠️ Setup script
